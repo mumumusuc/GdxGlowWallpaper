@@ -98,7 +98,8 @@ uniform mat4 u_worldTrans;
             vec3 direction;
         };
         uniform DirectionalLight u_dirLights[numDirectionalLights];
-        varying DirectionalLight v_dirLights[numDirectionalLights];
+        varying vec3 v_dirLightColors[numDirectionalLights];
+        varying vec3 v_dirLightDirs[numDirectionalLights];
     #endif // numDirectionalLights
     #if numPointLights > 0
         struct PointLight{
@@ -107,7 +108,8 @@ uniform mat4 u_worldTrans;
             vec3 direction;
         };
         uniform PointLight u_pointLights[numPointLights];
-        varying PointLight v_pointLights[numPointLights];
+        varying vec3 v_pointLightColors[numPointLights];
+        varying vec3 v_pointLightDirs[numPointLights];
     #endif // numPointLights
     #if	defined(ambientLightFlag) || defined(ambientCubemapFlag) || defined(sphericalHarmonicsFlag)
         #define ambientFlag
@@ -157,7 +159,10 @@ void main() {
         vec3 T = normalize(vec3(u_worldTrans * vec4(a_tangent,   0.0)));
         vec3 B = normalize(vec3(u_worldTrans * vec4(a_binormal, 0.0)));
         vec3 N = normalize(vec3(u_worldTrans * vec4(a_normal,    0.0)));
-        mat3 TBN = transpose(mat3(T, B, N));
+        mat3 TBN = mat3(1.0);
+        TBN[0][1] = TBN[1][0];
+        TBN[0][2] = TBN[2][0];
+        TBN[1][2] = TBN[2][1];
     #else
         mat3 TBN = mat3(vec3(1.,0.,0.),vec3(0.,1.,0.),vec3(0.,0.,1.));
     #endif
@@ -206,15 +211,15 @@ void main() {
 
 		#if (numDirectionalLights > 0) && defined(normalFlag)
 			for (int i = 0; i < numDirectionalLights; i++) {
-			v_dirLights[i].color = u_dirLights[i].color;
-			v_dirLights[i].direction = TBN * u_dirLights[i].direction;
+			v_dirLightColors[i] = u_dirLights[i].color;
+			v_dirLightDirs[i]= TBN * u_dirLights[i].direction;
 		}
 		#endif // numDirectionalLights
 
 		#if (numPointLights > 0) && defined(normalFlag)
 			for (int i = 0; i < numPointLights; i++) {
-			v_pointLights[i].color = u_pointLights[i].color;
-			v_pointLights[i].direction = TBN * (u_pointLights[i].position - pos.xyz);
+			v_pointLightColors[i] = u_pointLights[i].color;
+			v_pointLightDirs[i] = TBN * (u_pointLights[i].position - pos.xyz);
 		}
 		#endif // numPointLights
 	#endif // lightingFlag

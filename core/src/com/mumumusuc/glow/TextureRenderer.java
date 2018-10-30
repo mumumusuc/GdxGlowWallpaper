@@ -19,29 +19,30 @@ public class TextureRenderer implements Disposable {
     private Mesh mesh;
     private ShaderProgram shader, defaultShader, userShader;
     private Matrix4 projection = new Matrix4();
-    private String vert =
-            "attribute vec4 a_position;\n" //
-                    + "attribute vec2 a_texCoord0;\n" //
-                    + "uniform mat4 u_projTrans;\n" //
-                    + "varying vec2 v_texCoords;\n" //
-                    + "\n" //
-                    + "void main()\n" //
-                    + "{\n" //
-                    + "   v_texCoords = a_texCoord0;\n" //
-                    + "   gl_Position =  u_projTrans * a_position;\n" //
-                    + "}\n";
-    private String frag = "#ifdef GL_ES\n" //
+    private String vert = "#version 300 es\n"
+            + "layout(location=0) in vec4 a_position;\n" //
+            + "layout(location=1) in vec2 a_texCoord0;\n" //
+            + "uniform mat4 u_projTrans;\n" //
+            + "out vec2 v_texCoords;\n" //
+            + "\n" //
+            + "void main()\n" //
+            + "{\n" //
+            + "   v_texCoords = a_texCoord0;\n" //
+            + "   gl_Position =  u_projTrans * a_position;\n" //
+            + "}\n";
+    private String frag = "#version 300 es\n"
+            + "#ifdef GL_ES\n" //
             + "#define LOWP lowp\n" //
             + "precision mediump float;\n" //
             + "#else\n" //
             + "#define LOWP \n" //
             + "#endif\n" //
-            + "varying vec2 v_texCoords;\n" //
+            + "in vec2 v_texCoords;\n"
+            + "out vec4 gl_FragColor;\n" //
             + "uniform sampler2D texture_0;\n" //
-            + "uniform vec4 u_color = vec4(1.);\n" //
             + "void main()\n"//
             + "{\n" //
-            + "  gl_FragColor = u_color * texture2D(texture_0, v_texCoords);\n" //
+            + "  gl_FragColor = texture(texture_0, v_texCoords);\n" //
             + "}";
 
     TextureRenderer() {

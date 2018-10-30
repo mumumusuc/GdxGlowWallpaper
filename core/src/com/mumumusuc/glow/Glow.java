@@ -84,7 +84,7 @@ public class Glow extends ApplicationAdapter {
      * render contents to this buffer(2 texture), use MRT is supported
      */
     RenderBuffer screenBuffers;
-    float time = 0, exposure = 1.0f, enhance = 2f;
+    float time = 0, exposure = 1.5f, enhance = 2f;
     int BUFFER_WIDTH, BUFFER_HEIGHT;
 
     @Override
@@ -115,7 +115,7 @@ public class Glow extends ApplicationAdapter {
         float rgb = .0f;
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, rgb, rgb, rgb, 1f));
         light = new PointLight().set(Color.WHITE, new Vector3(-.1f, 6f, -3f), 1f);
-        light.setPosition(-0.006f, 7.27380f,4.0610f);
+        light.setPosition(-0.006f, 7.27380f, 4.0610f);
         environment.add(light);
         //environment.add(new DirectionalLight().set(Color.WHITE, 1, 1, -1));
         /**/
@@ -155,7 +155,7 @@ public class Glow extends ApplicationAdapter {
         assets.finishLoading();
 
         effect = assets.get(EFFECT, ParticleEffect.class).copy();
-        effect.translate(new Vector3(-0.006f, 7.27380f,4.0610f));
+        effect.translate(new Vector3(-0.006f, 7.27380f, 4.0610f));
         effect.rotate(Vector3.Y, 0);
         effect.rotate(Vector3.X, 125);
         //effect.translate(new Vector3(0, 1f,0));
@@ -163,14 +163,14 @@ public class Glow extends ApplicationAdapter {
         effect.init();
         effect.start();  // optional: particle will begin playing immediately
 
-       // ParticleEffect e = assets.get(ELEC, ParticleEffect.class).copy();
-       // e.translate(new Vector3(-.1f, 0.46f, -.09f));
-       // e.rotate(Vector3.X, -58);
-       // e.init();
-       // e.start();
+        // ParticleEffect e = assets.get(ELEC, ParticleEffect.class).copy();
+        // e.translate(new Vector3(-.1f, 0.46f, -.09f));
+        // e.rotate(Vector3.X, -58);
+        // e.init();
+        // e.start();
 
         particleSystem.add(effect);
-      //  particleSystem.add(e);
+        //  particleSystem.add(e);
 
     }
 
@@ -207,8 +207,11 @@ public class Glow extends ApplicationAdapter {
 
         Model m1 = builder.createBox(1f, 1f, 1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates);
         ModelInstance instance = new ModelInstance(m1);
-        instance.transform.translate(-3, 0.5f, 3);
+        Vector3 pos = new Vector3(-3, 0.5f, 3);
+        instance.transform.translate(pos);
         instances.add(instance);
+        PointLight light1 = new PointLight().set(Color.YELLOW, pos, 4f);
+        environment.add(light1);
 
         material.set(ColorAttribute.createDiffuse(Color.DARK_GRAY));
         Model m2 = builder.createLineGrid(30, 30, 1f, 1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates);
@@ -253,14 +256,14 @@ public class Glow extends ApplicationAdapter {
         mesh.end();
         screenBuffers.get(1).end();
         //Blur
-        hBlur(screenBuffers.get(1), screenBuffers.get(2), 1);
-        vBlur(screenBuffers.get(2), screenBuffers.get(1), 1);
-        for (int i = 0; i < 8; i++) {
-            hBlur(screenBuffers.get(1), screenBuffers.get(2), 5);
-            vBlur(screenBuffers.get(2), screenBuffers.get(1), 5);
+        //hBlur(screenBuffers.get(1), screenBuffers.get(2), 1);
+        //vBlur(screenBuffers.get(2), screenBuffers.get(1), 1);
+        for (int i = 0; i < 1; i++) {
+            hBlur(screenBuffers.get(1), screenBuffers.get(2), 2);
+            vBlur(screenBuffers.get(2), screenBuffers.get(1), 2);
         }
-        hBlur(screenBuffers.get(1), screenBuffers.get(2), 1);
-        vBlur(screenBuffers.get(2), screenBuffers.get(1), 1);
+        //hBlur(screenBuffers.get(1), screenBuffers.get(2), 1);
+        //vBlur(screenBuffers.get(2), screenBuffers.get(1), 1);
         //Render
         gl.glClearColor(1, 1, 1, 1);
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -285,7 +288,7 @@ public class Glow extends ApplicationAdapter {
         } else if (input.isKeyPressed(Input.Keys.RIGHT)) {
             enhance += .1f;
         }
-        //app.log(TAG, graphics.getFramesPerSecond() + "FPS");
+        app.log(TAG, graphics.getFramesPerSecond() + "FPS");
     }
 
     @Override

@@ -85,21 +85,14 @@ uniform vec4 u_specularColor;
         #define ambientFlag
     #endif
     #if numDirectionalLights > 0
-        struct DirectionalLight{
-            vec3 color;
-            vec3 direction;
-        };
-        varying DirectionalLight v_dirLights[numDirectionalLights];
+        varying vec3 v_dirLightColors[numDirectionalLights];
+        varying vec3 v_dirLightDirs[numDirectionalLights];
     #endif
     #if numPointLights > 0
-        struct PointLight{
-                vec3 color;
-                vec3 position;
-                vec3 direction;
-        };
-        varying PointLight v_pointLights[numPointLights];
+        varying vec3 v_pointLightColors[numPointLights];
+        varying vec3 v_pointLightDirs[numPointLights];
     #endif
-    #if defined(ambientFlag)
+    #if defined(ambientFlag) && defined(separateAmbientFlag)
         varying vec3 v_ambientLight;
     #endif
 #endif
@@ -110,6 +103,14 @@ vec3 calPointLightDiffuse(vec3 normal, vec3 lightPosition, vec3 lightColor);
 vec3 calPointLightSpecular(vec3 normal, vec3 viewDir, vec3 lightDir, vec3 lightColor, float shininess);
 
 void main() {
+    #if defined(lightingFlag)
+        vec3 lightDiffuse = v_lightDiffuse;
+        vec3 lightSpecular = v_lightSpecular;
+    #else
+        vec3 lightDiffuse = vec3(0.0);
+        vec3 lightSpecular = vec3(0.0);
+    #endif
+
 	#if defined(diffuseTextureFlag) && defined(diffuseColorFlag) && defined(colorFlag)
 		vec4 diffuse = texture2D(u_diffuseTexture, v_diffuseUV) * u_diffuseColor * v_color;
 	#elif defined(diffuseTextureFlag) && defined(diffuseColorFlag)
@@ -149,17 +150,17 @@ void main() {
     #if defined(lightingFlag)
         #if (numDirectionalLights > 0) && defined(normalFlag)
             for (int i = 0; i < numDirectionalLights; i++) {
-                v_lightDiffuse += calDirectLightDiffuse(normal, v_dirLights[i].direction, v_dirLights[i].color);
+                lightDiffuse += calDirectLightDiffuse(normal, v_dirLightDirs[i], v_dirLightColors[i]);
                 #ifdef specularFlag
-                    v_lightSpecular += calDirectLightSpecular(normal, v_viewDir,v_dirLights[i].direction, v_dirLights[i].color, u_shininess);
+                    lightSpecular += calDirectLightSpecular(normal, v_viewDir,v_dirLightDirs[i], v_dirLightColors[i], u_shininess);
                 #endif
             }
         #endif
         #if (numPointLights > 0) && defined(normalFlag)
             for (int i = 0; i < numPointLights; i++) {
-                v_lightDiffuse += calPointLightDiffuse(normal, v_pointLights[i].direction, v_pointLights[i].color);
+                lightDiffuse += calPointLightDiffuse(normal, v_pointLightDirs[i], v_pointLightColors[i]);
                 #ifdef specularFlag
-                    v_lightSpecular += calPointLightSpecular(normal, v_viewDir, v_pointLights[i].direction, v_pointLights[i].color, u_shininess);
+                    lightSpecular += calPointLightSpecular(normal, v_viewDir, v_pointLightDirs[i], v_pointLightColors[i], u_shininess);
                 #endif
             }
         #endif
@@ -169,31 +170,31 @@ void main() {
     #if (!defined(lightingFlag))
 		gl_FragColor.rgb = diffuse.rgb;
 	#elif (!defined(specularFlag))
-        #if defined(ambientFlag)
-             gl_FragColor.rgb = (diffuse.rgb * (v_ambientLight + v_lightDiffuse));
+        #if defined(ambientFlag)  && defined(separateAmbientFlag)
+             gl_FragColor.rgb = (diffuse.rgb * (v_ambientLight + lightDiffuse));
         #else
             #ifdef shadowMapFlag
-                gl_FragColor.rgb = getShadow() * (diffuse.rgb * v_lightDiffuse);
+                gl_FragColor.rgb = getShadow() * (diffuse.rgb * lightDiffuse);
             #else
-                gl_FragColor.rgb = (diffuse.rgb * v_lightDiffuse);
+                gl_FragColor.rgb = (diffuse.rgb * lightDiffuse);
             #endif //shadowMapFlag
         #endif
 	#else
 		#if defined(specularTextureFlag) && defined(specularColorFlag)
-			vec3 specular = texture2D(u_specularTexture, v_specularUV).rgb * u_specularColor.rgb * v_lightSpecular;
+			vec3 specular = texture2D(u_specularTexture, v_specularUV).rgb * u_specularColor.rgb * lightSpecular;
 		#elif defined(specularTextureFlag)
-			vec3 specular = texture2D(u_specularTexture, v_specularUV).rgb * v_lightSpecular;
+			vec3 specular = texture2D(u_specularTexture, v_specularUV).rgb * lightSpecular;
 		#elif defined(specularColorFlag)
-			vec3 specular = u_specularColor.rgb * v_lightSpecular;
+			vec3 specular = u_specularColor.rgb * lightSpecular;
 		#else
-			vec3 specular = v_lightSpecular;
+			vec3 specular = lightSpecular;
 		#endif
-		#if defined(ambientFlag)
-            gl_FragColor.rgb = (diffuse.rgb * (v_lightDiffuse + v_ambientLight)) + specular;
+		#if defined(ambientFlag) && defined(separateAmbientFlag)
+            gl_FragColor.rgb = (diffuse.rgb * (lightDiffuse + v_ambientLight)) + specular;
         #else
-            gl_FragColor.rgb = (diffuse.rgb * v_lightDiffuse) + specular;
+            gl_FragColor.rgb = (diffuse.rgb * lightDiffuse) + specular;
         #endif
-        gl_FragColor.rgb = (diffuse.rgb * (v_lightDiffuse + v_ambientLight)) + specular;
+        //gl_FragColor.rgb = (diffuse.rgb * (lightDiffuse + v_ambientLight)) + specular;
 	#endif //lightingFlag
 /***************************specular texture*****************************/
 /***************************emissive texture*****************************/

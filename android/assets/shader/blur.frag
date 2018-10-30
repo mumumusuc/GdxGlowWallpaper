@@ -1,4 +1,5 @@
 #version 300 es
+
 #ifdef GL_ES
 #define LOWP lowp
 precision mediump float;
@@ -8,20 +9,21 @@ precision mediump float;
 
 in vec2 v_texCoord;
 in vec4 v_color;
+out vec4 gl_FragColor;
 uniform sampler2D texture_0;
 uniform vec2 dir;
 uniform vec2 size;
 uniform float time;
 uniform float sampleStep;
 const int radius = 4;
-float weight[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+const float weight[5] = float[5](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 
 void main(){
     vec4 sum = vec4(0.0);
     float sub = step(0.,sampleStep)*sampleStep;
     vec2 s = dir / size;
     for(int i = -radius ; i <= radius ; i++){
-        sum += texture2D(texture_0, v_texCoord + float(i)*sub*s) * weight[abs(i)];
+        sum += texture(texture_0, v_texCoord + float(i)*sub*s) * weight[abs(i)];
     }
-    gl_FragColor = vec4(sum.rgb*1.0, 1.);
+    gl_FragColor = vec4(sum.rgb*1.0, 1.0);
 }

@@ -1,4 +1,5 @@
 #version 300 es
+
 #ifdef GL_ES
 #define LOWP lowp
 precision mediump float;
@@ -8,14 +9,15 @@ precision mediump float;
 
 in vec2 v_texCoord;
 in vec4 v_color;
+out vec4 gl_FragColor;
 uniform sampler2D texture_0;
 uniform sampler2D texture_1;
 uniform float exposure;
 const float gamma = 2.2;
 
 void main(){
-    vec3 hdrColor = texture2D(texture_0, v_texCoord).rgb;
-    vec3 bloomColor = texture2D(texture_1, v_texCoord).rgb;
+    vec3 hdrColor = texture(texture_0, v_texCoord).rgb;
+    vec3 bloomColor = texture(texture_1, v_texCoord).rgb;
     hdrColor += bloomColor;
     vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
     result = pow(result, vec3(1.0 / gamma));
