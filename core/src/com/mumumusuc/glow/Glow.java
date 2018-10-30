@@ -59,6 +59,11 @@ public class Glow extends ApplicationAdapter {
     static final String RENDER_FRAG = "shader/render.frag";
     static final String SAMPLER_FRAG = "shader/sampler.frag";
     static final String MODEL = "models/godzilla.g3db";
+    static final String Texture_D = "models/Godzilla_D.tga";
+    static final String Texture_E = "models/Godzilla_E.tga";
+    static final String Texture_N = "models/Godzilla_N.tga";
+    static final String Texture_S = "models/Godzilla_S.tga";
+    static final String MODEL1 = "models/godzilla_ball.g3db";
     static final String EFFECT = "effects/beam.pfx";
     static final String ELEC = "effects/elec.pfx";
 
@@ -79,7 +84,7 @@ public class Glow extends ApplicationAdapter {
      * render contents to this buffer(2 texture), use MRT is supported
      */
     RenderBuffer screenBuffers;
-    float time = 0, exposure = 1.0f, enhance = 1.0f;
+    float time = 0, exposure = 1.0f, enhance = 2f;
     int BUFFER_WIDTH, BUFFER_HEIGHT;
 
     @Override
@@ -98,8 +103,8 @@ public class Glow extends ApplicationAdapter {
         }
         /**/
         camera = new PerspectiveCamera(67, graphics.getWidth(), graphics.getHeight());
-        camera.position.set(0, 0, 3);
-        camera.lookAt(0, 0, 0);
+        camera.position.set(-10, 7, 10);
+        camera.lookAt(0, 2, 0);
         camera.far = 1000;
         camera.near = 1;
         camera.update();
@@ -109,19 +114,15 @@ public class Glow extends ApplicationAdapter {
         environment = new Environment();
         float rgb = .0f;
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, rgb, rgb, rgb, 1f));
-        //Vector3 pos = new Vector3(-.1f, .9f, -.6f);
-        Vector3 pos = new Vector3(-.0f, 0.9f, .8f);
-        light = new PointLight().set(Color.PINK, new Vector3(-.1f, 6f, -3f), 10.0f);
-        //environment.add(light);
-        environment.add(new DirectionalLight().set(Color.WHITE, 0, 0, -1));
+        light = new PointLight().set(Color.WHITE, new Vector3(-.1f, 6f, -3f), 1f);
+        light.setPosition(-0.006f, 7.27380f,4.0610f);
+        environment.add(light);
+        //environment.add(new DirectionalLight().set(Color.WHITE, 1, 1, -1));
         /**/
         assets = new AssetManager();
-        assets.load(MODEL, Model.class);
-        //assets.load(EFFECT, ParticleEffect.class);
-        assets.update();
-        assets.finishLoading();
+
         addModel();
-        //  addEffect();
+        addEffect();
         addEnvironment();
         /**/
         modelBatch = new ModelBatch(new CartoonShaderProvider(null));
@@ -150,77 +151,70 @@ public class Glow extends ApplicationAdapter {
         ParticleEffectLoader loader = new ParticleEffectLoader(new InternalFileHandleResolver());
         assets.setLoader(ParticleEffect.class, loader);
         assets.load(EFFECT, ParticleEffect.class, loadParam);
-        assets.load(ELEC, ParticleEffect.class, loadParam);
-        assets.update();
+        //assets.load(ELEC, ParticleEffect.class, loadParam);
         assets.finishLoading();
 
         effect = assets.get(EFFECT, ParticleEffect.class).copy();
-        Matrix4 mat = new Matrix4();
-        mat.translate(0, 0, 1);
-        //mat.scale(.1f, .1f, .1f);
-        //effect.setTransform(mat);
-        effect.rotate(Vector3.Y, 20);
+        effect.translate(new Vector3(-0.006f, 7.27380f,4.0610f));
+        effect.rotate(Vector3.Y, 0);
         effect.rotate(Vector3.X, 125);
-        //effect.translate(new Vector3(0.05f, 0.7f, 1.f));
-        effect.translate(new Vector3(-0.28f, 1.2f, -1.15f));
-
+        //effect.translate(new Vector3(0, 1f,0));
         //effect.scale(.2f, .2f, .2f);
         effect.init();
         effect.start();  // optional: particle will begin playing immediately
 
-        ParticleEffect e = assets.get(ELEC, ParticleEffect.class).copy();
-        e.translate(new Vector3(-.1f, 0.46f, -.09f));
-        e.rotate(Vector3.X, -58);
-        e.init();
-        e.start();
+       // ParticleEffect e = assets.get(ELEC, ParticleEffect.class).copy();
+       // e.translate(new Vector3(-.1f, 0.46f, -.09f));
+       // e.rotate(Vector3.X, -58);
+       // e.init();
+       // e.start();
 
         particleSystem.add(effect);
-        particleSystem.add(e);
+      //  particleSystem.add(e);
 
     }
 
     private void addModel() {
-        Model model = assets.get(MODEL, Model.class);
-        Texture D = new Texture(files.internal("models/Godzilla_D.tga"));
-        Texture E = new Texture(files.internal("models/Godzilla_E.tga"));
-        Texture N = new Texture(files.internal("models/Godzilla_N.tga"));
-        Texture S = new Texture(files.internal("models/Godzilla_S.tga"));
+        assets.load(MODEL, Model.class);
+        assets.load(MODEL1, Model.class);
+        assets.load(Texture_D, Texture.class);
+        assets.load(Texture_N, Texture.class);
+        assets.load(Texture_E, Texture.class);
+        assets.load(Texture_S, Texture.class);
+        assets.finishLoading();
 
+        Model model = assets.get(MODEL, Model.class);
         Material material = model.materials.get(0);
         material.clear();
-        material.set(TextureAttribute.createDiffuse(D));
-        material.set(TextureAttribute.createNormal(N));
-        material.set(TextureAttribute.createEmissive(E));
-        material.set(TextureAttribute.createSpecular(S));
+        material.set(TextureAttribute.createDiffuse(assets.get(Texture_D, Texture.class)));
+        material.set(TextureAttribute.createNormal(assets.get(Texture_N, Texture.class)));
+        material.set(TextureAttribute.createEmissive(assets.get(Texture_E, Texture.class)));
+        material.set(TextureAttribute.createSpecular(assets.get(Texture_S, Texture.class)));
         model.materials.add(material);
         instances.add(new ModelInstance(model));
+
+        ModelInstance model1 = new ModelInstance(assets.get(MODEL1, Model.class));
+        instances.add(model1);
     }
 
     private void addEnvironment() {
         PointLightsAttribute attr = new PointLightsAttribute();
         attr.lights.add(new PointLight().set(Color.GREEN, 0, 0, -3, 15f));
 
-        DirectionalLightsAttribute dirc = new DirectionalLightsAttribute();
-        dirc.lights.add(new DirectionalLight().set(Color.GOLD, 1, 0, 0));
-
         ModelBuilder builder = new ModelBuilder();
         Material material = new Material();
-        material.set(ColorAttribute.createDiffuse(Color.WHITE));
-        // material.set(new BlendingAttribute(.5f));
-        //material.set(attr);
-        //material.set(dirc);
-        Model model = builder.createBox(.2f, .2f, .2f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates);
-        ModelInstance instance = new ModelInstance(model);
-//        instance.transform.translate(light.position);
-        //instances.add(instance);
+        material.set(ColorAttribute.createDiffuse(Color.YELLOW));
 
-/*
-        material.set(ColorAttribute.createDiffuse(Color.WHITE));
-        Model m2 = builder.createLineGrid(60, 60, .1f, .1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates);
+        Model m1 = builder.createBox(1f, 1f, 1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates);
+        ModelInstance instance = new ModelInstance(m1);
+        instance.transform.translate(-3, 0.5f, 3);
+        instances.add(instance);
+
+        material.set(ColorAttribute.createDiffuse(Color.DARK_GRAY));
+        Model m2 = builder.createLineGrid(30, 30, 1f, 1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates);
         ModelInstance i2 = new ModelInstance(m2);
-        i2.transform.translate(0, -.9f, 0);
+        i2.transform.translate(0, 0, 0);
         instances.add(i2);
-*/
     }
 
     private void renderModel() {
@@ -247,7 +241,7 @@ public class Glow extends ApplicationAdapter {
         screenBuffers.get(0).begin();
         renderModel();
         screenBuffers.get(0).end();
-
+        //Sample
         screenBuffers.get(1).begin();
         mesh.setShader(samplerShader);
         mesh.begin();
@@ -258,7 +252,7 @@ public class Glow extends ApplicationAdapter {
         mesh.render(bufferRegion, screenBuffers.getTexture(0), 0, 0);
         mesh.end();
         screenBuffers.get(1).end();
-
+        //Blur
         hBlur(screenBuffers.get(1), screenBuffers.get(2), 1);
         vBlur(screenBuffers.get(2), screenBuffers.get(1), 1);
         for (int i = 0; i < 8; i++) {
@@ -267,7 +261,7 @@ public class Glow extends ApplicationAdapter {
         }
         hBlur(screenBuffers.get(1), screenBuffers.get(2), 1);
         vBlur(screenBuffers.get(2), screenBuffers.get(1), 1);
-
+        //Render
         gl.glClearColor(1, 1, 1, 1);
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         gl.glViewport(0, 0, graphics.getWidth(), graphics.getHeight());
@@ -286,9 +280,9 @@ public class Glow extends ApplicationAdapter {
             exposure += .1f;
         } else if (input.isKeyPressed(Input.Keys.DOWN)) {
             exposure -= .1f;
-        }else if (input.isKeyPressed(Input.Keys.LEFT)) {
+        } else if (input.isKeyPressed(Input.Keys.LEFT)) {
             enhance -= .1f;
-        }else if (input.isKeyPressed(Input.Keys.RIGHT)) {
+        } else if (input.isKeyPressed(Input.Keys.RIGHT)) {
             enhance += .1f;
         }
         //app.log(TAG, graphics.getFramesPerSecond() + "FPS");

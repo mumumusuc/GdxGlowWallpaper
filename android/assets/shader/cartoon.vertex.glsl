@@ -79,7 +79,13 @@ uniform mat4 u_worldTrans;
     varying vec3 v_lightSpecular;
     #ifdef ambientLightFlag
         uniform vec3 u_ambientLight;
-    #endif // ambientLightFlag
+    #endif
+    #ifdef ambientCubemapFlag
+        uniform vec3 u_ambientCubemap[6];
+    #endif // ambientCubemapFlag
+    #ifdef sphericalHarmonicsFlag
+        uniform vec3 u_sphericalHarmonics[9];
+    #endif //sphericalHarmonicsFlag
     #ifdef specularFlag
         varying vec3 v_viewDir;
     #endif
@@ -103,9 +109,9 @@ uniform mat4 u_worldTrans;
         uniform PointLight u_pointLights[numPointLights];
         varying PointLight v_pointLights[numPointLights];
     #endif // numPointLights
-    #if	defined(ambientLightFlag)
+    #if	defined(ambientLightFlag) || defined(ambientCubemapFlag) || defined(sphericalHarmonicsFlag)
         #define ambientFlag
-    #endif //ambientFlag
+    #endif
     #if defined(ambientFlag) && defined(separateAmbientFlag)
         varying vec3 v_ambientLight;
     #endif
@@ -162,6 +168,25 @@ void main() {
 		#elif defined(ambientFlag)
         	vec3 ambientLight = vec3(0.0);
 		#endif
+        #ifdef ambientCubemapFlag
+			vec3 squaredNormal = normal * normal;
+			vec3 isPositive  = step(0.0, normal);
+			ambientLight += squaredNormal.x * mix(u_ambientCubemap[0], u_ambientCubemap[1], isPositive.x) +
+					squaredNormal.y * mix(u_ambientCubemap[2], u_ambientCubemap[3], isPositive.y) +
+					squaredNormal.z * mix(u_ambientCubemap[4], u_ambientCubemap[5], isPositive.z);
+		#endif // ambientCubemapFlag
+
+		#ifdef sphericalHarmonicsFlag
+			ambientLight += u_sphericalHarmonics[0];
+			ambientLight += u_sphericalHarmonics[1] * normal.x;
+			ambientLight += u_sphericalHarmonics[2] * normal.y;
+			ambientLight += u_sphericalHarmonics[3] * normal.z;
+			ambientLight += u_sphericalHarmonics[4] * (normal.x * normal.z);
+			ambientLight += u_sphericalHarmonics[5] * (normal.z * normal.y);
+			ambientLight += u_sphericalHarmonics[6] * (normal.y * normal.x);
+			ambientLight += u_sphericalHarmonics[7] * (3.0 * normal.z * normal.z - 1.0);
+			ambientLight += u_sphericalHarmonics[8] * (normal.x * normal.x - normal.y * normal.y);
+		#endif // sphericalHarmonicsFlag
 
 		#ifdef ambientFlag
 			#ifdef separateAmbientFlag

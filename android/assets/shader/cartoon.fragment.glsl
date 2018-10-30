@@ -81,7 +81,7 @@ uniform vec4 u_specularColor;
 #ifdef lightingFlag
     varying vec3 v_lightDiffuse;
     varying vec3 v_lightSpecular;
-    #if	defined(ambientLightFlag)
+    #if	defined(ambientLightFlag) || defined(ambientCubemapFlag) || defined(sphericalHarmonicsFlag)
         #define ambientFlag
     #endif
     #if numDirectionalLights > 0
@@ -98,6 +98,9 @@ uniform vec4 u_specularColor;
                 vec3 direction;
         };
         varying PointLight v_pointLights[numPointLights];
+    #endif
+    #if defined(ambientFlag)
+        varying vec3 v_ambientLight;
     #endif
 #endif
 
@@ -166,7 +169,15 @@ void main() {
     #if (!defined(lightingFlag))
 		gl_FragColor.rgb = diffuse.rgb;
 	#elif (!defined(specularFlag))
-        gl_FragColor.rgb = (diffuse.rgb * v_lightDiffuse);
+        #if defined(ambientFlag)
+             gl_FragColor.rgb = (diffuse.rgb * (v_ambientLight + v_lightDiffuse));
+        #else
+            #ifdef shadowMapFlag
+                gl_FragColor.rgb = getShadow() * (diffuse.rgb * v_lightDiffuse);
+            #else
+                gl_FragColor.rgb = (diffuse.rgb * v_lightDiffuse);
+            #endif //shadowMapFlag
+        #endif
 	#else
 		#if defined(specularTextureFlag) && defined(specularColorFlag)
 			vec3 specular = texture2D(u_specularTexture, v_specularUV).rgb * u_specularColor.rgb * v_lightSpecular;
@@ -177,7 +188,12 @@ void main() {
 		#else
 			vec3 specular = v_lightSpecular;
 		#endif
-        gl_FragColor.rgb = (diffuse.rgb * v_lightDiffuse) + specular;
+		#if defined(ambientFlag)
+            gl_FragColor.rgb = (diffuse.rgb * (v_lightDiffuse + v_ambientLight)) + specular;
+        #else
+            gl_FragColor.rgb = (diffuse.rgb * v_lightDiffuse) + specular;
+        #endif
+        gl_FragColor.rgb = (diffuse.rgb * (v_lightDiffuse + v_ambientLight)) + specular;
 	#endif //lightingFlag
 /***************************specular texture*****************************/
 /***************************emissive texture*****************************/
