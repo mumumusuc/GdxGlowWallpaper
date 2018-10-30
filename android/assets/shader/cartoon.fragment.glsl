@@ -65,8 +65,12 @@ uniform vec4 u_specularColor;
 #endif
 
 #ifdef cameraPositionFlag
-    varying v_viewDir;
+    varying vec3 v_viewDir;
 #endif
+
+#ifdef specularFlag
+    varying vec3 v_viewDir;
+#endif // specularFlag
 
 #ifdef shininessFlag
     uniform float u_shininess;
@@ -125,8 +129,7 @@ void main() {
 		gl_FragColor.a = diffuse.a * v_opacity;
 		#ifdef alphaTestFlag
 			if (gl_FragColor.a <= v_alphaTest){
-				//discard;
-				gl_FragColor.a = 1.0;
+				discard;
 			}
 		#endif
 	#else
@@ -185,10 +188,10 @@ void main() {
     #elif defined(emissiveColorFlag)
         vec3 emissive = u_emissiveColor.rgb;
     #else
-        vec3 emissive = vec3(1.0);
+        vec3 emissive = vec3(0.0);
     #endif
 /****************************final******************************/
-    gl_FragColor.rgb += emissive;
+    gl_FragColor.rgb += emissive * 1.5;
 }
 
 vec3 calDirectLightDiffuse(vec3 normal, vec3 lightDir, vec3 lightColor){

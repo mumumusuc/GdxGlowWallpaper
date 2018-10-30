@@ -76,12 +76,15 @@ uniform mat4 u_worldTrans;
 
 #ifdef lightingFlag
     varying vec3 v_lightDiffuse;
+    varying vec3 v_lightSpecular;
     #ifdef ambientLightFlag
         uniform vec3 u_ambientLight;
     #endif // ambientLightFlag
+    #ifdef specularFlag
+        varying vec3 v_viewDir;
+    #endif
     #ifdef cameraPositionFlag
         uniform vec4 u_cameraPosition;
-        varying v_viweDir;
     #endif // cameraPositionFlag
     #if numDirectionalLights > 0
         struct DirectionalLight{
@@ -173,7 +176,7 @@ void main() {
 
 		#ifdef specularFlag
 			v_lightSpecular = vec3(0.0);
-			v_viweDir = TBN * normalize(u_cameraPosition.xyz - pos.xyz);
+			v_viewDir = TBN * normalize(u_cameraPosition.xyz - pos.xyz);
 		#endif // specularFlag
 
 		#if (numDirectionalLights > 0) && defined(normalFlag)

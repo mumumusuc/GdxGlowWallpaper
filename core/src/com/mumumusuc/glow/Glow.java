@@ -2,6 +2,7 @@ package com.mumumusuc.glow;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.graphics.Color;
@@ -49,6 +50,7 @@ import static com.badlogic.gdx.Gdx.app;
 import static com.badlogic.gdx.Gdx.files;
 import static com.badlogic.gdx.Gdx.gl;
 import static com.badlogic.gdx.Gdx.graphics;
+import static com.badlogic.gdx.Gdx.input;
 
 public class Glow extends ApplicationAdapter {
     static final String TAG = Glow.class.getSimpleName();
@@ -77,7 +79,7 @@ public class Glow extends ApplicationAdapter {
      * render contents to this buffer(2 texture), use MRT is supported
      */
     RenderBuffer screenBuffers;
-    float time = 0;
+    float time = 0, exposure = 1.0f, enhance = 1.0f;
     int BUFFER_WIDTH, BUFFER_HEIGHT;
 
     @Override
@@ -179,7 +181,6 @@ public class Glow extends ApplicationAdapter {
 
     private void addModel() {
         Model model = assets.get(MODEL, Model.class);
-        Texture Z = new Texture(files.internal("models/Godzilla_Z.tga"));
         Texture D = new Texture(files.internal("models/Godzilla_D.tga"));
         Texture E = new Texture(files.internal("models/Godzilla_E.tga"));
         Texture N = new Texture(files.internal("models/Godzilla_N.tga"));
@@ -187,11 +188,10 @@ public class Glow extends ApplicationAdapter {
 
         Material material = model.materials.get(0);
         material.clear();
-        //material.set(ColorAttribute.createDiffuse(Color.WHITE));
         material.set(TextureAttribute.createDiffuse(D));
         material.set(TextureAttribute.createNormal(N));
         material.set(TextureAttribute.createEmissive(E));
-        //material.set(TextureAttribute.createSpecular(S));
+        material.set(TextureAttribute.createSpecular(S));
         model.materials.add(material);
         instances.add(new ModelInstance(model));
     }
@@ -225,15 +225,11 @@ public class Glow extends ApplicationAdapter {
 
     private void renderModel() {
         gl.glViewport(0, 0, graphics.getWidth(), graphics.getHeight());
-        gl.glClearColor(.5f, .5f, .5f, 1);
+        gl.glClearColor(0, 0, 0, 0);
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-        //gl.glEnable(GL20.GL_BLEND);
-        //gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        //gl.glDepthMask(false);
-
         modelBatch.begin(camera);
         if (particleSystem != null) {
-            particleSystem.update(); // technically not necessary for rendering
+            particleSystem.update();
             particleSystem.begin();
             particleSystem.draw();
             particleSystem.end();
@@ -247,16 +243,17 @@ public class Glow extends ApplicationAdapter {
 
     @Override
     public void render() {
-        //    screenBuffers.get(0).begin();
+        //HDR
+        screenBuffers.get(0).begin();
         renderModel();
-    /*    screenBuffers.get(0).end();
+        screenBuffers.get(0).end();
 
         screenBuffers.get(1).begin();
         mesh.setShader(samplerShader);
         mesh.begin();
         gl.glClearColor(0, 0, 0, 1f);
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-        //mesh.setColor(r, g, b, 1f);
+        samplerShader.setUniformf("enhance", enhance);
         mesh.setProjection(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT);
         mesh.render(bufferRegion, screenBuffers.getTexture(0), 0, 0);
         mesh.end();
@@ -281,10 +278,20 @@ public class Glow extends ApplicationAdapter {
         screenBuffers.getTexture(1).bind(handle);
         renderShader.setUniformi("texture_1", handle);
         screenBuffers.getTexture(1).setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        renderShader.setUniformf("exposure", exposure);
         mesh.render(bufferRegion, screenBuffers.getTexture(0), 0, 0);
         mesh.end();
-*/
-        //       app.log(TAG, graphics.getFramesPerSecond() + "FPS");
+
+        if (input.isKeyPressed(Input.Keys.UP)) {
+            exposure += .1f;
+        } else if (input.isKeyPressed(Input.Keys.DOWN)) {
+            exposure -= .1f;
+        }else if (input.isKeyPressed(Input.Keys.LEFT)) {
+            enhance -= .1f;
+        }else if (input.isKeyPressed(Input.Keys.RIGHT)) {
+            enhance += .1f;
+        }
+        //app.log(TAG, graphics.getFramesPerSecond() + "FPS");
     }
 
     @Override

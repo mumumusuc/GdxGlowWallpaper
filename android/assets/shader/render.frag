@@ -10,8 +10,8 @@ in vec2 v_texCoord;
 in vec4 v_color;
 uniform sampler2D texture_0;
 uniform sampler2D texture_1;
-const float exposure = 1.;
-const float gamma = 1.2;
+uniform float exposure;
+const float gamma = 2.2;
 
 void main(){
     vec3 hdrColor = texture2D(texture_0, v_texCoord).rgb;

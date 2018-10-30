@@ -9,11 +9,10 @@ precision mediump float;
 in vec2 v_texCoord;
 in vec4 v_color;
 uniform sampler2D texture_0;
-const float gamma = 2.2;
+uniform float enhance;
 
 void main(){
     vec3 hdrColor = texture2D(texture_0, v_texCoord).rgb;
-    hdrColor = pow(hdrColor, vec3(1.0 / gamma));
-    float brightness = dot(hdrColor, vec3(0.2126, 0.7152, 0.0722));
-    gl_FragColor = vec4(step(.5, brightness) * hdrColor.rgb , 1.0f);
+    float brightness = dot(hdrColor, vec3(0.3, 0.6, 0.1));
+    gl_FragColor = vec4(step(0.8, brightness) * hdrColor * enhance, 1.0);
 }
