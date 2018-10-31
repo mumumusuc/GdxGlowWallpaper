@@ -16,10 +16,10 @@ uniform float exposure;
 const float gamma = 2.2;
 
 void main(){
-    vec3 hdrColor = texture(texture_0, v_texCoord0).rgb;
-    vec3 bloomColor = texture(texture_1, v_texCoord1).rgb;
+    vec4 hdrColor = texture(texture_0, v_texCoord0);
+    vec4 bloomColor = texture(texture_1, v_texCoord1);
     hdrColor += bloomColor;
-    vec3 result = vec3(1.0) - exp(-hdrColor * exposure);
-    result = pow(result, vec3(1.0 / gamma));
-    gl_FragColor = vec4(result, 1.0f);
+    vec4 result = vec4(1.0) - exp(-hdrColor * exposure);
+    result = pow(result, vec4(1.0 / gamma));
+    gl_FragColor = vec4(result.rgb, 1.0f);
 }

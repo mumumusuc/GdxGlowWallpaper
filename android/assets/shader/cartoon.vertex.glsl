@@ -92,6 +92,9 @@ uniform mat4 u_worldTrans;
     #ifdef cameraPositionFlag
         uniform vec4 u_cameraPosition;
     #endif // cameraPositionFlag
+    #ifdef fogFlag
+        varying float v_fog;
+    #endif // fogFlag
     #if numDirectionalLights > 0
         struct DirectionalLight{
             vec3 color;
@@ -155,6 +158,7 @@ void main() {
 		v_normal = normal;
 	#endif // normalFlag
 
+
     #if defined(TBNFlag)
         vec3 T = normalize(vec3(u_worldTrans * vec4(a_tangent,   0.0)));
         vec3 B = normalize(vec3(u_worldTrans * vec4(a_binormal, 0.0)));
@@ -165,6 +169,13 @@ void main() {
         TBN[1][2] = TBN[2][1];
     #else
         mat3 TBN = mat3(vec3(1.,0.,0.),vec3(0.,1.,0.),vec3(0.,0.,1.));
+    #endif
+
+	#ifdef fogFlag
+        vec3 flen = TBN * (u_cameraPosition.xyz - pos.xyz);
+        float distance = dot(flen, flen) * u_cameraPosition.w * 200.0;
+        float fog = exp(-pow(distance * 8.0,2.0));
+        v_fog = 1.0 - min(fog, 1.0);
     #endif
 
 	#ifdef lightingFlag

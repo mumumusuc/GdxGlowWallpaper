@@ -97,6 +97,11 @@ uniform vec4 u_specularColor;
     #endif
 #endif
 
+#ifdef fogFlag
+    uniform vec4 u_fogColor;
+    varying float v_fog;
+#endif // fogFlag
+
 vec3 calDirectLightDiffuse(vec3 normal, vec3 lightDir, vec3 lightColor);
 vec3 calDirectLightSpecular(vec3 normal, vec3 viewDir, vec3 lightDir, vec3 lightColor,float shininess);
 vec3 calPointLightDiffuse(vec3 normal, vec3 lightPosition, vec3 lightColor);
@@ -197,6 +202,9 @@ void main() {
         //gl_FragColor.rgb = (diffuse.rgb * (lightDiffuse + v_ambientLight)) + specular;
 	#endif //lightingFlag
 /***************************specular texture*****************************/
+    #ifdef fogFlag
+		gl_FragColor = mix(gl_FragColor, u_fogColor, v_fog);
+	#endif // end fogFlag
 /***************************emissive texture*****************************/
     #if defined(emissiveTextureFlag) && defined(emissiveColorFlag)
         vec3 emissive = texture2D(u_emissiveTexture, v_emissiveUV).rgb * u_emissiveColor.rgb;
@@ -207,8 +215,8 @@ void main() {
     #else
         vec3 emissive = vec3(0.0);
     #endif
+    gl_FragColor.rgb += emissive * 3.0;
 /****************************final******************************/
-    gl_FragColor.rgb += emissive * 1.5;
 }
 
 vec3 calDirectLightDiffuse(vec3 normal, vec3 lightDir, vec3 lightColor){

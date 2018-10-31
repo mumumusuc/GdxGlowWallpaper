@@ -7,8 +7,8 @@ precision mediump float;
 #define LOWP
 #endif
 
-in vec2 v_texCoord;
-in vec4 v_color;
+in vec2 v_texCoord0;
+in vec2 v_texCoord1;
 out vec4 gl_FragColor;
 uniform sampler2D texture_0;
 uniform vec2 dir;
@@ -23,7 +23,7 @@ void main(){
     float sub = step(0.,sampleStep)*sampleStep;
     vec2 s = dir / size;
     for(int i = -radius ; i <= radius ; i++){
-        sum += texture(texture_0, v_texCoord + float(i)*sub*s) * weight[abs(i)];
+        sum += texture(texture_0, v_texCoord0 + float(i)*sub*s) * weight[abs(i)];
     }
     gl_FragColor = vec4(sum.rgb, 1.0);
 }

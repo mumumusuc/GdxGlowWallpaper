@@ -60,6 +60,7 @@ public class Glow extends ApplicationAdapter {
     static final String RENDER_FRAG = "shader/render.frag";
     static final String SAMPLER_FRAG = "shader/sampler.frag";
     static final String MODEL = "models/godzilla.g3db";
+    static final String MODEL_ADD = "models/godzilla_add.g3db";
     static final String Texture_D = "models/Godzilla_D.tga";
     static final String Texture_E = "models/Godzilla_E.tga";
     static final String Texture_N = "models/Godzilla_N.tga";
@@ -67,7 +68,7 @@ public class Glow extends ApplicationAdapter {
     static final String EFFECT = "effects/beam.pfx";
     static final int BUFFER_WIDTH = 256;
     static final int BUFFER_HEIGHT = 256;
-    float exposure = 1.0f, enhance = 1.5f, time = 0;
+    float exposure = 0.2f, enhance = 1.5f, time = 0;
 
     PerspectiveCamera camera;
     CameraInputController controller;
@@ -75,6 +76,7 @@ public class Glow extends ApplicationAdapter {
     Environment environment;
     ModelBatch modelBatch;
     Array<ModelInstance> instances = new Array<ModelInstance>();
+    Array<ModelInstance> renderables = new Array<ModelInstance>();
     PointLight light;
     ParticleEffect effect;
     ParticleSystem particleSystem;
@@ -118,7 +120,8 @@ public class Glow extends ApplicationAdapter {
         environment = new Environment();
         float rgb = .0f;
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, rgb, rgb, rgb, 1f));
-        light = new PointLight().set(Color.WHITE, new Vector3(-.1f, 6f, -3f), 1f);
+        environment.set(new ColorAttribute(ColorAttribute.Fog, Color.BLACK));
+        light = new PointLight().set(Color.WHITE, new Vector3(-.1f, 6f, -3f), 8f);
         light.setPosition(-0.006f, 7.27380f, 4.0610f);
         environment.add(light);
         //environment.add(new DirectionalLight().set(Color.WHITE, 1, 1, -1));
@@ -127,7 +130,7 @@ public class Glow extends ApplicationAdapter {
         mesh = new TextureRenderer();
         int W = graphics.getWidth();
         int H = graphics.getHeight();
-        screenBuffers = new RenderBuffer(1, W, H, true);
+        screenBuffers = new RenderBuffer(2, W, H, true);
         blurBuffers = new RenderBuffer(2, BUFFER_WIDTH, BUFFER_HEIGHT, false);
         screenRegion = makeRenderRoi(screenBuffers.getTexture(0), W, H, false);
         blurRegion = makeRenderRoi(blurBuffers.getTexture(0), W, H, false);
@@ -179,6 +182,7 @@ public class Glow extends ApplicationAdapter {
 
     private void addModel() {
         assets.load(MODEL, Model.class);
+        assets.load(MODEL_ADD, Model.class);
         assets.load(Texture_D, Texture.class);
         assets.load(Texture_N, Texture.class);
         assets.load(Texture_E, Texture.class);
@@ -192,8 +196,10 @@ public class Glow extends ApplicationAdapter {
         material.set(TextureAttribute.createNormal(assets.get(Texture_N, Texture.class)));
         material.set(TextureAttribute.createEmissive(assets.get(Texture_E, Texture.class)));
         material.set(TextureAttribute.createSpecular(assets.get(Texture_S, Texture.class)));
+        material.set(new ColorAttribute(ColorAttribute.Emissive, 2, 2, 2, 2));
         model.materials.add(material);
         instances.add(new ModelInstance(model));
+        instances.add(new ModelInstance(assets.get(MODEL_ADD, Model.class)));
     }
 
     private void addEnvironment() {
@@ -227,17 +233,20 @@ public class Glow extends ApplicationAdapter {
         instances.add(i2);
     }
 
-    private void renderModel() {
+    private void renderModel(int size, boolean particle) {
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         modelBatch.begin(camera);
-        if (particleSystem != null) {
+        if (particleSystem != null && particle) {
             particleSystem.update();
             particleSystem.begin();
             particleSystem.draw();
             particleSystem.end();
             modelBatch.render(particleSystem);
         }
-        modelBatch.render(instances, environment);
+        renderables.clear();
+        renderables.addAll(instances, 0, size);
+        if (particle) modelBatch.render(renderables, environment);
+        else modelBatch.render(renderables);
         modelBatch.end();
     }
 
@@ -246,6 +255,7 @@ public class Glow extends ApplicationAdapter {
 
     @Override
     public void render() {
+        if (instances.size <= 0) return;
         //renderModel();
         //HDR
         screenWidth = screenBuffers.getTexture(0).getWidth();
@@ -253,8 +263,14 @@ public class Glow extends ApplicationAdapter {
         screenBuffers.get(0).begin();
         gl.glViewport(0, 0, screenWidth, screenHeight);
         gl.glClearColor(0, 0, 0, 0);
-        renderModel();
+        renderModel(instances.size, true);
         screenBuffers.get(0).end();
+        //render glow models
+        screenBuffers.get(1).begin();
+        gl.glViewport(0, 0, screenWidth, screenHeight);
+        gl.glClearColor(0, 0, 0, 0);
+        renderModel(1, false);
+        screenBuffers.get(1).end();
         //Sample
         blurBuffers.get(0).begin();
         gl.glViewport(0, 0, blurBuffers.get(1).getWidth(), blurBuffers.get(1).getHeight());
@@ -266,6 +282,8 @@ public class Glow extends ApplicationAdapter {
         samplerShader.setUniformf("enhance", enhance * (float) (Math.cos(time) + 1f));
         mesh.setRenderRoi(0, screenRegion);
         mesh.bindTexture(0, screenBuffers.getTexture(0));
+        mesh.setRenderRoi(1, screenRegion);
+        mesh.bindTexture(1, screenBuffers.getTexture(1));
         blurRegion.save();
         blurRegion.scale(1, 1);
         blurRoi = blurRegion.getRoi();
@@ -418,6 +436,7 @@ public class Glow extends ApplicationAdapter {
 
     class CartoonShaderProvider extends DefaultShaderProvider {
         DefaultShader.Config config;
+        DefaultShader defaultShader;
 
         public CartoonShaderProvider(DefaultShader.Config defaultConfig) {
             super(defaultConfig);
@@ -428,7 +447,9 @@ public class Glow extends ApplicationAdapter {
 
         @Override
         protected Shader createShader(Renderable renderable) {
-            return new DefaultShader(renderable, config);
+            defaultShader = new DefaultShader(renderable, config);
+            return defaultShader;
         }
+
     }
 }
