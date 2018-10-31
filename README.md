@@ -12,7 +12,7 @@ TODO
 TODO
 ### 使用Diffuse、Emissive、Specular和Normal贴图
 TODO
-### 使用3D-Partcles
+### 使用3D-Particles
 TODO
 ### 合成与渲染
 TODO
@@ -23,4 +23,4 @@ TODO
 ### Android的内存消耗与CPU占用
 |设备|分辨率|预设|Buffer大小|帧率|内存占用|CPU占用|
 |:---|:---|:---|:---|:---|:---|:---|
-|Nexus5x(808)|1920x1080||||||
+|Nexus5x(808)|1920x1080|-|256x256|60FPS|105MB|<15%|
