@@ -65,10 +65,9 @@ public class Glow extends ApplicationAdapter {
     static final String Texture_N = "models/Godzilla_N.tga";
     static final String Texture_S = "models/Godzilla_S.tga";
     static final String EFFECT = "effects/beam.pfx";
-    static final String ELEC = "effects/elec.pfx";
-    static final int BUFFER_WIDTH = 512;
-    static final int BUFFER_HEIGHT = 512;
-    float exposure = 1.0f, enhance = 1f;
+    static final int BUFFER_WIDTH = 256;
+    static final int BUFFER_HEIGHT = 256;
+    float exposure = 1.0f, enhance = 1.5f, time = 0;
 
     PerspectiveCamera camera;
     CameraInputController controller;
@@ -93,6 +92,7 @@ public class Glow extends ApplicationAdapter {
 
     @Override
     public void create() {
+        //graphics.setContinuousRendering(false);
         samplerShader = new ShaderProgram(files.internal(SHADER_VERT), files.internal(SAMPLER_FRAG));
         if (!samplerShader.isCompiled()) {
             throw new IllegalArgumentException(samplerShader.getLog());
@@ -127,8 +127,8 @@ public class Glow extends ApplicationAdapter {
         mesh = new TextureRenderer();
         int W = graphics.getWidth();
         int H = graphics.getHeight();
-        screenBuffers = new RenderBuffer(2, W, H);
-        blurBuffers = new RenderBuffer(2, BUFFER_WIDTH, BUFFER_HEIGHT);
+        screenBuffers = new RenderBuffer(1, W, H, true);
+        blurBuffers = new RenderBuffer(2, BUFFER_WIDTH, BUFFER_HEIGHT, false);
         screenRegion = makeRenderRoi(screenBuffers.getTexture(0), W, H, false);
         blurRegion = makeRenderRoi(blurBuffers.getTexture(0), W, H, false);
         addModel();
@@ -166,26 +166,15 @@ public class Glow extends ApplicationAdapter {
         ParticleEffectLoader loader = new ParticleEffectLoader(new InternalFileHandleResolver());
         assets.setLoader(ParticleEffect.class, loader);
         assets.load(EFFECT, ParticleEffect.class, loadParam);
-        //assets.load(ELEC, ParticleEffect.class, loadParam);
         assets.finishLoading();
 
         effect = assets.get(EFFECT, ParticleEffect.class).copy();
         effect.translate(new Vector3(-0.006f, 7.27380f, 4.0610f));
         effect.rotate(Vector3.Y, 0);
         effect.rotate(Vector3.X, 125);
-        //effect.translate(new Vector3(0, 1f,0));
-        //effect.scale(.2f, .2f, .2f);
         effect.init();
-        effect.start();  // optional: particle will begin playing immediately
-
-        // ParticleEffect e = assets.get(ELEC, ParticleEffect.class).copy();
-        // e.translate(new Vector3(-.1f, 0.46f, -.09f));
-        // e.rotate(Vector3.X, -58);
-        // e.init();
-        // e.start();
-
+        effect.start();
         particleSystem.add(effect);
-        //  particleSystem.add(e);
     }
 
     private void addModel() {
@@ -213,15 +202,25 @@ public class Glow extends ApplicationAdapter {
 
         ModelBuilder builder = new ModelBuilder();
         Material material = new Material();
-        material.set(ColorAttribute.createDiffuse(Color.YELLOW));
+        material.set(ColorAttribute.createDiffuse(Color.DARK_GRAY));
 
-        Model m1 = builder.createBox(1f, 1f, 1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.TextureCoordinates);
-        ModelInstance instance = new ModelInstance(m1);
-        Vector3 pos = new Vector3(-3, 0.5f, 3);
-        instance.transform.translate(pos);
-        instances.add(instance);
+        for (int i = 0; i < 10; i++) {
+            float w = (float) (1 + 2f * Math.random());
+            float h = (float) (1 + 6f * Math.random());
+            float d = (float) (1 + 2f * Math.random());
+            float x = (float) (Math.random() - 0.5);
+            x = 3 * x / Math.abs(x) + 10 * x;
+            float y = h / 2;
+            float z = (float) (Math.random() - 0.5);
+            z = 3 * z / Math.abs(z) + 10 * z;
+            Model m1 = builder.createBox(w, h, w, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates);
+            ModelInstance instance = new ModelInstance(m1);
+            Vector3 pos = new Vector3(x, y, z);
+            instance.transform.translate(pos);
+            instances.add(instance);
+        }
 
-        material.set(new ColorAttribute(ColorAttribute.AmbientLight, Color.DARK_GRAY));
+        material.set(new ColorAttribute(ColorAttribute.AmbientLight, Color.GRAY));
         Model m2 = builder.createLineGrid(30, 30, 1f, 1f, material, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates);
         ModelInstance i2 = new ModelInstance(m2);
         i2.transform.translate(0, 0, 0);
@@ -242,20 +241,19 @@ public class Glow extends ApplicationAdapter {
         modelBatch.end();
     }
 
+    int screenWidth, screenHeight;
+    int[] blurRoi;
 
     @Override
     public void render() {
+        //renderModel();
         //HDR
-        int width = screenBuffers.getTexture(0).getWidth();
-        int height = screenBuffers.getTexture(0).getHeight();
+        screenWidth = screenBuffers.getTexture(0).getWidth();
+        screenHeight = screenBuffers.getTexture(0).getHeight();
         screenBuffers.get(0).begin();
-        gl.glViewport(0, 0, width, height);
-        gl.glClearColor(0, 0, 0, 1);
-        camera.viewportWidth = width;
-        camera.viewportHeight = height;
+        gl.glViewport(0, 0, screenWidth, screenHeight);
+        gl.glClearColor(0, 0, 0, 0);
         renderModel();
-        camera.viewportWidth = graphics.getWidth();
-        camera.viewportHeight = graphics.getHeight();
         screenBuffers.get(0).end();
         //Sample
         blurBuffers.get(0).begin();
@@ -265,23 +263,19 @@ public class Glow extends ApplicationAdapter {
         mesh.setProjection(0, 0, blurBuffers.get(1).getWidth(), blurBuffers.get(1).getHeight());
         mesh.setShader(samplerShader);
         mesh.begin();
-        samplerShader.setUniformf("enhance", enhance);
+        samplerShader.setUniformf("enhance", enhance * (float) (Math.cos(time) + 1f));
         mesh.setRenderRoi(0, screenRegion);
         mesh.bindTexture(0, screenBuffers.getTexture(0));
         blurRegion.save();
         blurRegion.scale(1, 1);
-        int[] roi = blurRegion.getRoi();
+        blurRoi = blurRegion.getRoi();
         blurRegion.restore();
-        mesh.render(roi);
+        mesh.render(blurRoi);
         mesh.end();
         blurBuffers.get(0).end();
         //Blur
         hBlur(blurBuffers.get(0), blurBuffers.get(1), 1);
         vBlur(blurBuffers.get(1), blurBuffers.get(0), 1);
-        for (int i = 0; i < 5; i++) {
-            hBlur(blurBuffers.get(1), blurBuffers.get(0), 4);
-            vBlur(blurBuffers.get(0), blurBuffers.get(1), 4);
-        }
         hBlur(blurBuffers.get(0), blurBuffers.get(1), 1);
         vBlur(blurBuffers.get(1), blurBuffers.get(0), 1);
         //Render
@@ -307,6 +301,12 @@ public class Glow extends ApplicationAdapter {
             enhance -= .1f;
         } else if (input.isKeyPressed(Input.Keys.RIGHT) || input.isKeyPressed(Input.Keys.VOLUME_DOWN)) {
             enhance += .1f;
+        }
+
+        if (time > 2 * Math.PI) {
+            time = 0;
+        } else {
+            time += 0.05f;
         }
         app.log(TAG, graphics.getFramesPerSecond() + "FPS");
     }
@@ -361,14 +361,15 @@ public class Glow extends ApplicationAdapter {
         int index = 0;
         FrameBuffer[] buffers;
 
-        public RenderBuffer(final int count, int w, int h) {
+        public RenderBuffer(final int count, int w, int h, boolean depth) {
             this.count = count;
             buffers = new FrameBuffer[count];
             FrameBufferBuilder builder = new FrameBufferBuilder(w, h);
             builder.addColorTextureAttachment(GL30.GL_RGBA16F, GL30.GL_RGBA, GL30.GL_FLOAT);
-            builder.addBasicDepthRenderBuffer();
+            if (depth) builder.addBasicDepthRenderBuffer();
             for (int i = 0; i < count; i++) {
                 buffers[i] = builder.build();
+                buffers[i].getColorBufferTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
             }
         }
 

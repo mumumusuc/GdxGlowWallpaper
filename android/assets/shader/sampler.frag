@@ -14,7 +14,7 @@ uniform sampler2D texture_0;
 uniform float enhance;
 
 void main(){
-    vec3 hdrColor = texture(texture_0, v_texCoord).rgb;
-    float brightness = dot(hdrColor, vec3(0.3, 0.6, 0.1));
-    gl_FragColor = vec4(step(0.8, brightness) * hdrColor * enhance, 1.0);
+    vec4 hdrColor = texture(texture_0, v_texCoord);
+    float brightness = dot(hdrColor.rgb, vec3(0.3, 0.6, 0.1));
+    gl_FragColor = vec4(step(0.8, brightness) * hdrColor.rgb * enhance, hdrColor.a);
 }

@@ -25,5 +25,5 @@ void main(){
     for(int i = -radius ; i <= radius ; i++){
         sum += texture(texture_0, v_texCoord + float(i)*sub*s) * weight[abs(i)];
     }
-    gl_FragColor = vec4(sum.rgb*1.0, 1.0);
+    gl_FragColor = vec4(sum.rgb, 1.0);
 }
