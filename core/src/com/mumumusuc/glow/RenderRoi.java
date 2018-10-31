@@ -50,9 +50,19 @@ public class RenderRoi {
         return scale;
     }
 
+    public void scale(float scale) {
+        this.scale[0] = scale;
+        this.scale[1] = scale;
+    }
+
     public void scale(float scaleX, float scaleY) {
-        scale[0] = scaleX;
-        scale[1] = scaleY;
+        this.scale[0] = scaleX;
+        this.scale[1] = scaleY;
+    }
+
+    public void scale(float[] scale) {
+        this.scale[0] = scale[0];
+        this.scale[1] = scale[1];
     }
 
     public void save() {

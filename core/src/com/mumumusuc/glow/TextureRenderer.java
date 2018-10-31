@@ -117,8 +117,12 @@ public class TextureRenderer implements Disposable {
         shader.setUniformi("texture_" + index, handle);
     }
 
-    public void setColor(float r, float g, float b, float a) {
-        shader.setUniformf("u_color", r, g, b, a);
+    public void render(RenderRoi roi) {
+        render(roi.getRoi());
+    }
+
+    public void render(int[] roi) {
+        render(roi[0], roi[1], roi[2], roi[3]);
     }
 
     public void render(float x, float y, float w, float h) {
